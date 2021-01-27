@@ -96,8 +96,9 @@ output <- "../00_Output/" #where the .gpkg file will be stored
 tempdir <- "./temp/" #careful as all files inside will be removed
 rpush = TRUE #if you want a notification when finished (RPushbullet must be configured before)
 overwrite = TRUE #overwrite .gpkg if exists
+Hfloor = 3 #set desired height for each floor above the ground
 
-catastroprovince('Melilla', catastropush, tempdir, output, rpush = TRUE, overwrite = FALSE)
+catastroprovince('Melilla', catastropush, tempdir, output, rpush = TRUE, overwrite = FALSE, Hfloor = 3)
 ```
 
 <div class="figure" style="text-align: center">
@@ -149,6 +150,7 @@ tempdir <- "./temp/" #careful as all files inside will be removed
 rpush = TRUE #if you want a notification when finished (RPushbullet must be configured before)
 overwrite = TRUE #overwrite .gpkg if exists
 ncores = 16 #specify number of cores dedicated
+Hfloor = 3 #set desired height for each floor above the ground
 
 # Set list of provinces to download
 provinceslist <- c("Zamora", "Vigo")
@@ -158,7 +160,7 @@ cl <- parallel::makeCluster(ncores, type="FORK")
 doParallel::registerDoParallel(cl)
 
 # Execute function
-foreach(i=provinceslist) %dopar% {catastroprovince(i,catastropush, tempdir, output, rpush, overwrite)}
+foreach(i=provinceslist) %dopar% {catastroprovince(i,catastropush, tempdir, output, rpush, overwrite, Hfloor)}
 
 # Stop parallel 
 stopCluster(cl)
@@ -174,6 +176,7 @@ tempdir <- "./temp/" #careful as all files inside will be removed
 rpush = TRUE #if you want a notification when finished (RPushbullet must be configured before)
 overwrite = TRUE #overwrite .gpkg if exists
 ncores = 16 #specify number of cores dedicated
+Hfloor = 3 #set desired height for each floor above the ground
 
 # Set list of provinces to download
 provinceslist <- c("Zamora", "Vigo")
@@ -185,7 +188,7 @@ clusterEvalQ(cl, library("CatastroDownloader")) # load libraries
 clusterExport(cl, c('catastropush', 'output', 'tempdir', 'ncores'))
 
 # Execute function
-foreach(i=provinceslist) %dopar% {catastroprovince(i,catastropush, tempdir, output, rpush, overwrite)}
+foreach(i=provinceslist) %dopar% {catastroprovince(i,catastropush, tempdir, output, rpush, overwrite, Hfloor)}
 
 # Stop parallel 
 stopCluster(cl)
