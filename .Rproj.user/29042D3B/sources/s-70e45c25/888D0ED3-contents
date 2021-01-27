@@ -40,8 +40,7 @@ Install dependencies (libraries) in R:
 
 ```{r eval = FALSE, echo=TRUE}
 # install libraries to install packages from github
-install.packages("githubinstall")
-library(githubinstall)
+install.packages("devtools"); library(devtools)
 
 install_github("cesarkero/CatastroDownloader")
 ```

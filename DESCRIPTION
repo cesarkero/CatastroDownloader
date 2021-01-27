@@ -13,10 +13,10 @@ Depends:
     feedeR,
     RPushbullet,
     dplyr,
-    sf
-Imports: 
+    sf,
     utils,
     data.table,
     doParallel,
     mapview
+Imports:
 RoxygenNote: 7.1.1
