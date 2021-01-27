@@ -76,7 +76,7 @@ catastroprovince <- function(province = "Melilla",
                              catastropush = "http://www.catastro.minhap.es/INSPIRE/buildings/ES.SDGC.bu.atom.xml",
                              tempdir = "./temp/",
                              output = "./output/",
-                             rpush = TRUE,
+                             rpush = FALSE,
                              overwrite = TRUE,
                              Hfloor=3){
     # set gpkgname
