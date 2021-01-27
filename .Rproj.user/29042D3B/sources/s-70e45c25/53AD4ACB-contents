@@ -172,28 +172,25 @@ stopCluster(cl)
 ```
 
 ## Screenshots of the results
-#### Notification
-If you have previously configured [rpushbullet](https://github.com/eddelbuettel/rpushbullet)
-you will get a notification in your devices when the process in completed.
+```{r echo = FALSE, fig.cap="Screenshot of the notification when process in finished", out.width = '30%', fig.align="center"}
+knitr::include_graphics("./man/figures/I08.jpg")
+```
 
-<p align="center">
-  <img width="300" src="./man/figures/I08.jpg">
-</p>
 
-#### Screenshot of Ceuta
-<p align="center">
-  <img width="800" src="./man/figures/I05.png">
-</p>
+```{r echo = FALSE, fig.cap="Screenshot of Ceuta", out.width = '100%', fig.align="center"}
+knitr::include_graphics("./man/figures/I05.png")
+```
 
-#### Detail of Ceuta
-<p align="center">
-  <img width="800" src="./man/figures/I04.png">
-</p>
 
-#### Screenshot of Orense (somewhere)
-<p align="center">
-  <img width="800" src="./man/figures/I03.png">
-</p>
+```{r echo = FALSE, fig.cap="Screenshot of Ceuta (detail)", out.width = '100%', fig.align="center"}
+knitr::include_graphics("./man/figures/I04.png")
+```
+
+
+```{r echo = FALSE, fig.cap="Screenshot of Orense (somewhere)", out.width = '100%', fig.align="center"}
+knitr::include_graphics("./man/figures/I03.png")
+```
+
 
 # Notes for the future:
  - May be a shiny app could be created (even using a selection with cursor both for Provinces and Municipalities)

@@ -2,7 +2,7 @@ Package: CatastroDownloader
 Type: Package
 Title: Download Spanish Catastro for a complete Province and creates a gpkg with update time
 Version: 0.1.0
-Author: César Arquero Cabral (ModlEarth)
+Author: César Arquero Cabral
 Maintainer: César Arquero Cabral <c.arquero@modlearth.com>
 Description: This package download the full set of catastro and merge municipalities at a level of province
     The generated file contains

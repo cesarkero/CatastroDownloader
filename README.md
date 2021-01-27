@@ -193,56 +193,41 @@ stopCluster(cl)
 
 ## Screenshots of the results
 
-<div class="figure" style="text-align: center">
+#### Notification
 
-<img src="./man/figures/I08.jpg" alt="Screenshot of the notification when process in finished" width="30%" />
+If you have previously configured
+[rpushbullet](https://github.com/eddelbuettel/rpushbullet) you will get
+a notification in your devices when the process in completed.
 
-<p class="caption">
+<p align="center">
 
-Screenshot of the notification when process in
-finished
-
-</p>
-
-</div>
-
-<div class="figure" style="text-align: center">
-
-<img src="./man/figures/I05.png" alt="Screenshot of Ceuta" width="100%" />
-
-<p class="caption">
-
-Screenshot of
-Ceuta
+<img width="300" src="./man/figures/I08.jpg">
 
 </p>
 
-</div>
+#### Screenshot of Ceuta
 
-<div class="figure" style="text-align: center">
+<p align="center">
 
-<img src="./man/figures/I04.png" alt="Screenshot of Ceuta (detail)" width="100%" />
-
-<p class="caption">
-
-Screenshot of Ceuta
-(detail)
+<img width="800" src="./man/figures/I05.png">
 
 </p>
 
-</div>
+#### Detail of Ceuta
 
-<div class="figure" style="text-align: center">
+<p align="center">
 
-<img src="./man/figures/I03.png" alt="Screenshot of Orense (somewhere)" width="100%" />
-
-<p class="caption">
-
-Screenshot of Orense (somewhere)
+<img width="800" src="./man/figures/I04.png">
 
 </p>
 
-</div>
+#### Screenshot of Orense (somewhere)
+
+<p align="center">
+
+<img width="800" src="./man/figures/I03.png">
+
+</p>
 
 # Notes for the future:
 
