@@ -1,0 +1,94 @@
+#' catastroprovince
+#'
+#' @param province
+#' @param catastropush
+#' @param tempfolder
+#' @param outputfolder
+#' @param rpush
+#'
+#' @description catastroprovince is a function that download all the catastro data types from
+#' a list of municipalities within a province and exports the data to a gpkg
+#'
+#' @return gpkgname as the directory of the gpkg file created after the process
+#'
+#' @examples
+#' \dontrun{
+#'
+#' }
+#-------------------------------------------------------------------------------
+catastroprovince <- function(province = "Ourense",
+                             catastropush = "http://www.catastro.minhap.es/INSPIRE/buildings/ES.SDGC.bu.atom.xml",
+                             tempfolder = "./temp/",
+                             outputfolder = "./output/",
+                             rpush = TRUE){
+
+    # Read catastro and get province list and links
+    c <- ProvinceLinks(catastropush);    links <- c[[2]];    provinces  <- c[[1]]
+
+    #---------------------------------------------------------------------------
+    # set index of province in c1
+    sel <- match(province, provinces)
+    cat("Working on: ", provinces[sel], "\n")
+
+    #---------------------------------------------------------------------------
+    # Read catastro (level 2) for the province
+    c2 <- feed.extract(links[sel])$items
+    # list of dates
+    c2_dates <- c2$date
+    # list of links (with ñ correction)
+    c2_links <- gsub("�|ï¿½",'Ñ',c2$link)
+    # list of titles (corrected)
+    c2_titles <- gsub("�|ï¿½",'Ñ',c2$title)
+    # list of municipios_IDs
+    c2_mun_IDs <- trimws(substring(c2_titles, 0, 6))
+    # list of municipios (with ñ correction)
+    # 1st gsub get title and remove all text before final number (ID)
+    # 2nd gsub change "�" by 'Ñ'
+    c2_mun <- gsub("\\s*\\w*$", "", substring(c2_titles, 8, 100))
+
+    #---------------------------------------------------------------------------
+    # create empty list to store geodata
+    b1 <- list();    b2<- list();    b3 <- list()
+
+    # set tempfolder
+    tempfolder = paste0(tempfolder,'/',province,'/')
+    ifelse(!dir.exists(tempfolder),dir.create(tempfolder),NA)
+
+    # Iterate over municipio and store info
+    for (i in 1:dim(c2)[1]){
+        cat("Downloading element ", i, " of ", dim(c2)[1], "\n")
+
+        # Set parameters
+        link <- c2_links[i]
+        name <- c2_mun[i]
+        id <- c2_mun_IDs[i]
+        update <- c2_dates[i]
+
+        # get geodata from zip and add province
+        sts <- catastrozip2st(link, tempfolder, name)
+
+        # add st elements to lists
+        b1[i] <- sts[1];    b2[i] <- sts[2];    b3[i] <- sts[3]
+    }
+
+    # join each tematich list of layers (using jlayers function)
+    cat("\n", "Joining layers", "\n")
+    b1m <- do.call(rbind,b1)
+    b2m <- do.call(rbind,b2)
+    b3m <- do.call(rbind,b3)
+
+    # export layers (if NA, layer would not be written)
+    cat("\n", "Exporting layers", "\n")
+    gpkgname <- paste0(output, "Catastro_", province, "_", Sys.Date(), ".gpkg")
+    file.remove(gpkgname)
+    tryCatch(st_write(b1m, gpkgname, layer = "Building"))
+    tryCatch(st_write(b2m, gpkgname, layer = "Buildingpart", append = TRUE))
+    tryCatch(st_write(b3m, gpkgname, layer = "Otherconstruction", append = TRUE))
+
+    #-------------------------------------------------------------------------------
+    # pushbullet
+    body <- paste0("Created: ", gpkgname)
+    if (rpush == TRUE){pbPost("note", title="Catastro downloaded", body = body)}
+
+    return (gpkgname)
+}

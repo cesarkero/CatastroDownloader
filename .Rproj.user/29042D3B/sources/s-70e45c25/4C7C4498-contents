@@ -1,0 +1,60 @@
+library(CatastroDownloader)
+
+# Parameters
+catastropush <- "http://www.catastro.minhap.es/INSPIRE/buildings/ES.SDGC.bu.atom.xml"
+output <- "../00_Output/"
+tempdir <- "./temp/" #careful as all files inside will be removed
+ncores <- 16
+rpush = TRUE
+overwrite = TRUE
+
+#-------------------------------------------------------------------------------
+# Catch Provinces Names in atom service
+FeedProvinces(catastropush)
+
+# Create the list of Provinces of interest
+provinceslist <- c("Ceuta","Melilla")
+
+#-------------------------------------------------------------------------------
+# +++++++++++++++++++++ LINUX TESTS ++++++++++++++++++++++++++++++++++++++++++++
+#-------------------------------------------------------------------------------
+# TEST 1 --> Download Full province
+#-------------------------------------------------------------------------------
+catastroprovince('Ceuta', catastropush, tempfolder, output, rpush = TRUE, overwrite = FALSE)
+
+#---------------------------------------------------------------------------
+# TEST 2 --> Dowload Provinces in Parallel
+#-------------------------------------------------------------------------------
+cl <- parallel::makeCluster(ncores, type="FORK")
+doParallel::registerDoParallel(cl)
+
+foreach(i=provinceslist) %dopar% {catastroprovince(i,catastropush, tempdir, output, rpush, overwrite)}
+
+stopCluster(cl)
+
+#-------------------------------------------------------------------------------
+# ++++++++++++++++++++++ WINDOWS TESTS +++++++++++++++++++++++++++++++++++++++++
+#-------------------------------------------------------------------------------
+# TEST 1 --> Download Full province
+#-------------------------------------------------------------------------------
+catastroprovince('Melilla',catastropush, tempfolder, output, rpush = TRUE, overwrite = TRUE)
+
+#---------------------------------------------------------------------------
+# TEST 2 --> Dowload Provinces in Parallel
+#-------------------------------------------------------------------------------
+cl <- parallel::makeCluster(ncores, type="PSOCK")
+doParallel::registerDoParallel(cl)
+clusterEvalQ(cl, library("CatastroDownloader")) # load libraries
+clusterExport(cl, c('catastropush', 'output', 'tempdir', 'ncores'))
+
+foreach(i=provinceslist) %dopar% {catastroprovince(i,catastropush, tempdir, output, rpush, overwrite)}
+
+stopCluster(cl)
+
+#-------------------------------------------------------------------------------
+# ++++++++++++++++++++++ SHOW SOMETHING  +++++++++++++++++++++++++++++++++++++++++
+#-------------------------------------------------------------------------------
+# show some data
+file <- paste0(output, 'Catastro_Ceuta_2021-01-26.gpkg')
+layer <- st_read(file, 'buildingpart')
+mapview(layer)

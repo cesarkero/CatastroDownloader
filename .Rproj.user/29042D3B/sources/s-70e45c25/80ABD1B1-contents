@@ -1,0 +1,181 @@
+# devtools::install_github("DataWookie/feedeR")
+library(feedeR)
+library(sf)
+library(mapview)
+library(utils)
+library(dplyr)
+library(RPushbullet)
+library(data.table)
+library(doParallel)
+
+catastropush <- "http://www.catastro.minhap.es/INSPIRE/buildings/ES.SDGC.bu.atom.xml"
+provinceslist <- c("Ourense","Lugo","Coruña","Pontevedra")
+output <- "./output/"
+tempfolder <- "./temp/" #careful as all inside will be eliminated
+
+#-------------------------------------------------------------------------------
+# FUNCTIONS
+#-------------------------------------------------------------------------------
+# catastrozip2st downloads a zip link into a temporal folder and extracts:
+# - building.gml
+# - buildingpart.gml
+# - otherconstruction.gml 
+# It returns a list of 3 elements, each in st format
+# Note1: it includes the calculation of Hmax heigth for buildingparts
+
+catastrozip2st <- function(ziplink, tempfolder = "./temp/Ourense/", name){
+
+    # download temporal file
+    tempzip <- paste0(tempfolder, "temp.zip")
+    
+    # WINDOWS ERROR USING LINKS WITH Ñ --> RESOLVE
+    download.file(URLencode(ziplink), destfile = tempzip, method = "auto")
+    
+    # find filename for buildingpart and building
+    ns <- unzip(tempzip, list=TRUE)$Name
+    bn <- ns[grepl("*building.gml", ns)]
+    bpn <- ns[grepl("*buildingpart.gml", ns)]
+    ocn <- ns[grepl("*construction.gml", ns)]
+    
+    # extract building, buildingpart and otherconstruction
+    # the folder of extraction must be without last /
+    utils::unzip(tempzip, exdir = gsub('.{1}$','',tempfolder), bn)
+    utils::unzip(tempzip, exdir = gsub('.{1}$','',tempfolder), bpn)
+    utils::unzip(tempzip, exdir = gsub('.{1}$','',tempfolder), ocn)
+    
+    # read files as st (NA if .gml is not right)
+    b1 <- tryCatch(st_read(paste0(tempfolder, bn)), error=function(err) NA)
+    b2 <- tryCatch(st_read(paste0(tempfolder, bpn)), error=function(err) NA)
+    b3 <- tryCatch(st_read(paste0(tempfolder, ocn)), error=function(err) NA)
+    
+    #---------------------------------------------------------------------------
+    # Add atributes to identify source
+    #---------------------------------------------------------------------------
+    # Add Hmax to buildingpart based on floors above ground (3 m)
+    if (!is.null(dim(b1))){b2 <- mutate(b2, Hmax = numberOfFloorsAboveGround*3)}
+    
+    #---------------------------------------------------------------------------
+    # Add name is value is not NA
+    l <- lapply(list(b1,b2,b3), function(x) if(!is.null(dim(x))){mutate(x, name = name)})
+    
+    #---------------------------------------------------------------------------
+    # remove temporal files
+    unlink(paste0(tempfolder,"*"), recursive = TRUE)
+    
+    return(l)
+}
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# ProvinceLinks
+# this function returns a list of provinces from catastro web
+ProvinceLinks <- function(catastropush){
+    # Read catastro (level 1) (THIS COULD HAVE BEEN LEFT OUT OF THE FUNCTION)
+    c1 <- feed.extract(catastropush)$items
+    
+    # list of xml (2 level link) and Provinces (THIS COULD HAVE BEEN LEFT OUT OF THE FUNCTION)
+    c1link <- c1$link
+    provinces  <- trimws(substring(c1$title, 23, 100))
+    
+    return(list(provinces,c1link))
+}
+
+#-------------------------------------------------------------------------------
+# catastroprovince is a function that download all the catastro data types from 
+# a list of municipalities within a province and exports the data to a gpkg
+catastroprovince <- function(province = "Ourense", catastropush,
+                             tempfolder = "./temp/",
+                             outputfolder = "./output/",
+                             rpush = TRUE){
+    
+    # Read catastro and get province list and links
+    c <- ProvinceLinks(catastropush);    links <- c[[2]];    provinces  <- c[[1]]
+    
+    #---------------------------------------------------------------------------
+    # set index of province in c1 
+    sel <- match(province, provinces)
+    cat("Working on: ", provinces[sel], "\n")
+    
+    #---------------------------------------------------------------------------
+    # Read catastro (level 2) for the province
+    c2 <- feed.extract(links[sel])$items
+    # list of dates
+    c2_dates <- c2$date
+    # list of links (with ñ correction)
+    c2_links <- gsub("�|ï¿½",'Ñ',c2$link)
+    # list of titles (corrected)
+    c2_titles <- gsub("�|ï¿½",'Ñ',c2$title)
+    # list of municipios_IDs
+    c2_mun_IDs <- trimws(substring(c2_titles, 0, 6))
+    # list of municipios (with ñ correction)
+    # 1st gsub get title and remove all text before final number (ID)
+    # 2nd gsub change "�" by 'Ñ'
+    c2_mun <- gsub("\\s*\\w*$", "", substring(c2_titles, 8, 100))
+    
+    #---------------------------------------------------------------------------
+    # create empty list to store geodata
+    b1 <- list();    b2<- list();    b3 <- list()
+    
+    # set tempfolder
+    tempfolder = paste0(tempfolder,'/',province,'/')
+    ifelse(!dir.exists(tempfolder),dir.create(tempfolder),NA)
+    
+    # Iterate over municipio and store info
+    for (i in 1:dim(c2)[1]){
+        cat("Downloading element ", i, " of ", dim(c2)[1], "\n")
+        
+        # Set parameters
+        link <- c2_links[i]
+        name <- c2_mun[i]
+        id <- c2_mun_IDs[i]
+        update <- c2_dates[i]
+        
+        # get geodata from zip and add province
+        sts <- catastrozip2st(link, tempfolder, name)
+        
+        # add st elements to lists
+        b1[i] <- sts[1];    b2[i] <- sts[2];    b3[i] <- sts[3]
+    }
+
+    # join each tematich list of layers (using jlayers function)
+    cat("\n", "Joining layers", "\n")
+    b1m <- do.call(rbind,b1)
+    b2m <- do.call(rbind,b2)
+    b3m <- do.call(rbind,b3)
+
+    # export layers (if NA, layer would not be written)
+    cat("\n", "Exporting layers", "\n")
+    gpkgname <- paste0(output, "Catastro_", province, "_", Sys.Date(), ".gpkg")
+    file.remove(gpkgname)
+    tryCatch(st_write(b1m, gpkgname, layer = "Building"))
+    tryCatch(st_write(b2m, gpkgname, layer = "Buildingpart", append = TRUE))
+    tryCatch(st_write(b3m, gpkgname, layer = "Otherconstruction", append = TRUE))
+    
+    #-------------------------------------------------------------------------------
+    # pushbullet
+    body <- paste0("Created: ", gpkgname)
+    if (rpush == TRUE){pbPost("note", title="Catastro downloaded", body = body)}
+}
+
+#-------------------------------------------------------------------------------
+# PROCESS
+#-------------------------------------------------------------------------------
+# THIS PART IS JUST NEEDED TO CREATE A LAYOUT to select provinces from list
+# # Read catastro (level 1) (THIS COULD HAVE BEEN LEFT OUT OF THE FUNCTION)
+# c1 <- feed.extract(catastropush)$items
+# 
+# # list of xml (2 level link) and Provinces (THIS COULD HAVE BEEN LEFT OUT OF THE FUNCTION)
+# c1link <- c1$link
+# provinces  <- trimws(substring(c1$title, 23, 100))
+
+#---------------------------------------------------------------------------
+# GPKG FOR PROVINCES
+#---------------------------------------------------------------------------
+#proceso de parallel para windows NO FUNCIONA TODAVIA
+no_cores <- detectCores()-2
+cl <- parallel::makeCluster(no_cores, type="FORK")
+doParallel::registerDoParallel(cl)
+# parLapply(cl, provinceslist, function(x) catastroprovince(x, catastropush, tempfolder, output))
+foreach(i=provinceslist) %dopar% {catastroprovince(i, catastropush, tempfolder, output)}
+stopCluster(cl)

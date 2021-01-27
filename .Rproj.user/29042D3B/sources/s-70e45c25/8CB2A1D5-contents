@@ -1,0 +1,132 @@
+---
+title: "CatastroDownloader"
+author: "César Arquero Cabral"
+date: "27/1/2021"
+output: html_document
+---
+
+# Description
+
+The goal of this library is to download the complete updated Catastro layers 
+for la Province of Spain. Main benefits: 
+- Can be parallelized to download several Provinces at once. Moreover, it can be 
+configured to receive a mobile notification when finished.
+- It merges all the municipalities in one file while keeping the minicipality name
+as an attribute in order to use it as filter later on.
+- It creates a single file in .gpkg format where 3 layers are stored: 
+    - buildings
+    - buildingparts
+    - otherconstructions
+- It stimates the building height for eacch of the polygons (given a height of floor above the ground).
+
+# Installation
+
+This packages has been tested in:
+
+  - Ubuntu 20.04 with R 3.6.3
+  - Windows 10 with R 4.0 + Rtools40
+
+Install dependencies (libraries) in R:
+
+``` r
+install_github("cesarkero/CatastroDownloader")
+```
+
+---
+
+# Examples
+
+Get the list of available Provinces in the Catastro atom service
+
+``` r
+library(CatastroDownloader)
+
+# set parameters
+catastropush <- "http://www.catastro.minhap.es/INSPIRE/buildings/ES.SDGC.bu.atom.xml"
+
+# Catch Provinces Names in atom service
+FeedProvinces(catastropush)
+
+ [1] "Albacete"       "Alicante"       "Almería"        "Avila"          "Badajoz"        "Baleares"       "Barcelona"      "Burgos"         "Cáceres"        "Cádiz"         
+[11] "Castellón"      "Ciudad Real"    "Córdoba"        "Coruña"         "Cuenca"         "Girona"         "Granada"        "Guadalajara"    "Huelva"         "Huesca"        
+[21] "Jaén"           "León"           "Lleida"         "La Rioja"       "Lugo"           "Madrid"         "Málaga"         "Murcia"         "Ourense"        "Oviedo"        
+[31] "Palencia"       "Palmas (Las)"   "Pontevedra"     "Salamanca"      "S.C. Tenerife"  "Cantabria"      "Segovia"        "Sevilla"        "Soria"          "Tarragona"     
+[41] "Teruel"         "Toledo"         "Valencia"       "Valladolid"     "Zamora"         "Zaragoza"       "Cartagena"      "Gijon"          "Jerez Frontera" "Vigo"          
+[51] "Ceuta"          "Melilla"
+```
+
+If you just need to download the catastro for a single Province use this:
+
+``` r
+# Set parameters 
+catastropush <- "http://www.catastro.minhap.es/INSPIRE/buildings/ES.SDGC.bu.atom.xml" #url for the atom service
+output <- "../00_Output/" #where the .gpkg file will be stored
+tempdir <- "./temp/" #careful as all files inside will be removed
+rpush = TRUE #if you want a notification when finished (RPushbullet must be configured before)
+overwrite = TRUE #overwrite .gpkg if exists
+
+catastroprovince('Oviedo', catastropush, tempdir, output, rpush = TRUE, overwrite = FALSE)
+```
+
+
+
+---
+
+# Parameters
+catastropush <- "http://www.catastro.minhap.es/INSPIRE/buildings/ES.SDGC.bu.atom.xml"
+output <- "../00_Output/"
+tempdir <- "./temp/" #careful as all files inside will be removed
+ncores <- 16
+rpush = TRUE
+overwrite = TRUE
+
+#-------------------------------------------------------------------------------
+# Catch Provinces Names in atom service
+FeedProvinces(catastropush)
+
+# Create the list of Provinces of interest
+provinceslist <- c("Ceuta","Melilla")
+
+#-------------------------------------------------------------------------------
+# +++++++++++++++++++++ LINUX TESTS ++++++++++++++++++++++++++++++++++++++++++++
+#-------------------------------------------------------------------------------
+# TEST 1 --> Download Full province
+#-------------------------------------------------------------------------------
+catastroprovince('Ceuta', catastropush, tempfolder, output, rpush = TRUE, overwrite = FALSE)
+
+#---------------------------------------------------------------------------
+# TEST 2 --> Dowload Provinces in Parallel
+#-------------------------------------------------------------------------------
+cl <- parallel::makeCluster(ncores, type="FORK")
+doParallel::registerDoParallel(cl)
+
+foreach(i=provinceslist) %dopar% {catastroprovince(i,catastropush, tempdir, output, rpush, overwrite)}
+
+stopCluster(cl)
+
+#-------------------------------------------------------------------------------
+# ++++++++++++++++++++++ WINDOWS TESTS +++++++++++++++++++++++++++++++++++++++++
+#-------------------------------------------------------------------------------
+# TEST 1 --> Download Full province
+#-------------------------------------------------------------------------------
+catastroprovince('Melilla',catastropush, tempfolder, output, rpush = TRUE, overwrite = TRUE)
+
+#---------------------------------------------------------------------------
+# TEST 2 --> Dowload Provinces in Parallel
+#-------------------------------------------------------------------------------
+cl <- parallel::makeCluster(ncores, type="PSOCK")
+doParallel::registerDoParallel(cl)
+clusterEvalQ(cl, library("CatastroDownloader")) # load libraries
+clusterExport(cl, c('catastropush', 'output', 'tempdir', 'ncores'))
+
+foreach(i=provinceslist) %dopar% {catastroprovince(i,catastropush, tempdir, output, rpush, overwrite)}
+
+stopCluster(cl)
+
+#-------------------------------------------------------------------------------
+# ++++++++++++++++++++++ SHOW SOMETHING  +++++++++++++++++++++++++++++++++++++++++
+#-------------------------------------------------------------------------------
+# show some data
+file <- paste0(output, 'Catastro_Ceuta_2021-01-26.gpkg')
+layer <- st_read(file, 'buildingpart')
+mapview(layer)
