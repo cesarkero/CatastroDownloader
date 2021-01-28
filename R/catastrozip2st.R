@@ -63,7 +63,7 @@ catastrozip2st <- function(ziplink, tempdir = "./temp/", name, Hfloor =3){
 
         #---------------------------------------------------------------------------
         # remove temporal files
-        unlink(paste0(tempdir,"*"), recursive = TRUE)
+        unlink(tempdir, recursive = TRUE)
 
         return(l)
 }

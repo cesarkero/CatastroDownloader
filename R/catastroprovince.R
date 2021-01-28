@@ -132,15 +132,32 @@ catastroprovince <- function(province = "Melilla",
             b1[i] <- sts[1];    b2[i] <- sts[2];    b3[i] <- sts[3]
         }
 
+        #---------------------------------------------------------------------------
+        # remove NULL from lists
+        b1c <- b1[!unlist(lapply(b1,is.null))]
+        b2c <- b2[!unlist(lapply(b2,is.null))]
+        b3c <- b3[!unlist(lapply(b3,is.null))]
+        #---------------------------------------------------------------------------
+        # before merging them all --> CRS's must be equal ¡¡¡¡
+        # all CRSs must be equal --> capture the most common CRS between all files and convert the others...
+        cat("\n", "Homogenize the crs to the most common one...", "\n")
+        crstransform <- function (sflayer,crs) {return(tryCatch(st_transform(sflayer,crs), error=function(e) NA))}
+        b1crs <- lapply(b1c, crstransform, crs = mccrs(b1c))
+        b2crs <- lapply(b2c, crstransform, crs = mccrs(b2c))
+        b3crs <- lapply(b3c, crstransform, crs = mccrs(b3c))
+        #---------------------------------------------------------------------------
         # join each tematich list of layers (using jlayers function)
-        cat("\n", "Joining layers", "\n")
-        b1m <- do.call(rbind,b1)
-        b2m <- do.call(rbind,b2)
-        b3m <- do.call(rbind,b3)
-
+        # This part could be parallelized...
+        cat("\n", "Joining layers...", "\n")
+        cat("\n", "Joining buildings...", "\n")
+        b1m <- do.call(rbind, b1crs)
+        cat("\n", "Joining buildingparts...", "\n")
+        b2m <- do.call(rbind, b2crs)
+        cat("\n", "Joining otherconstructions...", "\n")
+        b3m <- do.call(rbind, b3crs)
+        #---------------------------------------------------------------------------
         # export layers (if NA, layer would not be written)
         cat("\n", "Exporting layers", "\n")
-
         # replace gpkg just in case the name are already stablished
         if (overwrite == TRUE){
             print (paste0("File exist & overwriting file: ", gpkgname))

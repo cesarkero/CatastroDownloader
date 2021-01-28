@@ -1,5 +1,5 @@
 ---
-title: CatastroDownloader
+title: CatastroDownloader 0.1.1
 date: "`r Sys.Date()`"
 subtitle: Tool to download updated Spanish Catastro clean and single file
 tags: [R,Catastro,sf, mapview, html, maps]
@@ -179,7 +179,7 @@ If you have previously configured [rpushbullet](https://github.com/eddelbuettel/
 you will get a notification in your devices when the process in completed.
 
 <p align="center">
-  <img width="300" src="./man/figures/I08.jpg">
+  <img width="300" src="./man/figures/I08.png">
 </p>
 
 #### Screenshot of Ceuta
@@ -199,4 +199,9 @@ you will get a notification in your devices when the process in completed.
 
 # Notes for the future:
  - May be a shiny app could be created (even using a selection with cursor both for Provinces and Municipalities)
- - Need of improvement in speed of execution (the most time consuming task is merging all the municipalities layers into one...)
+ - Need of improvement in speed of execution (the most time consuming task is merging all the municipalities layers into one...) May be it could be parallelized internaly ? What would happend when the parallel process is also "outside"?
+ - May be it is interesting to specified the desired CRS for the output.
+
+---
+# Corrections:
+ - When a province contains municipalities with different CRS's, all the layers will be transformed into the most common CRS.

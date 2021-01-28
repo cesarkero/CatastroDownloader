@@ -1,6 +1,6 @@
-CatastroDownloader
+CatastroDownloader 0.1.1
 ================
-2021-01-27
+2021-01-28
 
 # Description
 
@@ -71,7 +71,7 @@ catastropush <- "http://www.catastro.minhap.es/INSPIRE/buildings/ES.SDGC.bu.atom
 FeedProvinces(catastropush)
 ```
 
-This is the list of provinces at 2021-01-27:
+This is the list of provinces at 2021-01-28:
 
 \[1\] “Albacete” “Alicante” “Almería” “Avila” “Badajoz” “Baleares”
 “Barcelona” “Burgos” “Cáceres” “Cádiz”  
@@ -203,7 +203,7 @@ a notification in your devices when the process in completed.
 
 <p align="center">
 
-<img width="300" src="./man/figures/I08.jpg">
+<img width="300" src="./man/figures/I08.png">
 
 </p>
 
@@ -236,4 +236,15 @@ a notification in your devices when the process in completed.
   - May be a shiny app could be created (even using a selection with
     cursor both for Provinces and Municipalities)
   - Need of improvement in speed of execution (the most time consuming
-    task is merging all the municipalities layers into one…)
+    task is merging all the municipalities layers into one…) May be it
+    could be parallelized internaly ? What would happend when the
+    parallel process is also “outside”?
+  - May be it is interesting to specified the desired CRS for the
+    output.
+
+-----
+
+# Corrections:
+
+  - When a province contains municipalities with different CRS’s, all
+    the layers will be transformed into the most common CRS.
