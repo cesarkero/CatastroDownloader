@@ -33,8 +33,9 @@ as an attribute in order to use it as filter later on.
 
 This packages has been tested in:
 
-  - Ubuntu 20.04 with R 3.6.3
+  - Ubuntu 20.04 with R 4.0.3
   - Windows 10 with R 4.0 + Rtools40
+  - macOS 10.15.7, R 4.0.3 y Rstudio 1.4
 
 Install dependencies (libraries) in R:
 
